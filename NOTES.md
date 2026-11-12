@@ -1,6 +1,7 @@
 # Ghi chú phân tích · Day 04
 
 Họ và tên: Đỗ Việt Anh
+
 MSSV:2A202603973
 
 ## 1. Case được chọn
@@ -40,15 +41,15 @@ eval_before.json, case A1:
 
 | Chỉ số | `eval_before.json` | `eval_after.json` |
 |---|---|---|
-| Điểm tổng | 94.05 | `null` (partial mean: 94.8) |
-| Điểm case đã chọn | 85 | 95 |
+| Điểm tổng | 94.05 | 82.41 |
+| Điểm case đã chọn | 85 | 98 |
 | Số model calls | 3 model calls trong trace A1 | 6 model calls trong trace A1 |
 | Token, chi phí nếu có | Có trong `eval_before.json` | Có trong `eval_after.json` |
 
-- Lỗi đã giải quyết: A1 tăng từ 85 lên 95; câu trả lời sau cải tiến đã phân biệt
+- Lỗi đã giải quyết: A1 tăng từ 85 lên 98; câu trả lời sau cải tiến đã phân biệt
   mốc resolved với `updated_at` tốt hơn.
-- Lỗi còn lại hoặc mới xuất hiện: A4 không được chấm vì judge timeout; A6 lỗi
-  provider timeout. Vì còn 2 case `unscored`, điểm tổng chính thức vẫn là `null`.
+- Lỗi còn lại hoặc mới xuất hiện: A5 và H8 kết thúc ở `max_steps`, nhưng vẫn
+  được chấm; cần tối ưu việc dừng hoặc giảm gọi tool nếu muốn cải thiện điểm.
 
 ## 5. Giới hạn
 
