@@ -51,4 +51,18 @@ class BonusAgentTests(unittest.TestCase):
         self.assertEqual(json.loads(p.histories[1][-1]['content'])['error'],'INVALID_ARGUMENTS')
         self.assertTrue(json.loads(p.histories[2][-1]['content'])['ok'])
 
+    def test_persistent_rate_limit_is_capped(self):
+        t=BonusTools(scenario='rate_limit_always')
+        p=ScriptedProvider([
+            call('a','get_vercel_status',{}),
+            call('b','get_vercel_status',{}),
+            call('c','get_vercel_status',{}),
+            call('d','get_vercel_status',{}),
+            final('Không xác nhận được trạng thái Vercel.'),
+        ])
+        result=run_agent('Kiểm tra',p,t,max_steps=6)
+        self.assertEqual(result['status'],'completed')
+        self.assertEqual(t.calls[('get_vercel_status','vercel')],3)
+        self.assertTrue(any(x['event']=='retry_exhausted' for x in result['trace']))
+
 if __name__=='__main__': unittest.main()

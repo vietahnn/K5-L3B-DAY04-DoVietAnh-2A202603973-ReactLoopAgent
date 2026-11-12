@@ -56,3 +56,15 @@ eval_before.json, case A1:
 `eval_before.json` chỉ là một lần chạy nên có thể bị ảnh hưởng bởi timeout hoặc
 biến động model/provider. Thay đổi này chỉ kiểm tra mốc thời gian khi tool đã
 trả update tương ứng; không chứng minh mọi claim trong câu trả lời đều đúng.
+
+## 6. Bonus
+
+- `agent.py` dùng `tools.schemas` và `tools.system_prompt` khi tools bonus cung
+  cấp chúng, nhưng vẫn tương thích với tools bài chính.
+- Bonus hỗ trợ 5 status provider, pagination qua `next_offset`, dữ liệu nhiễu,
+  lỗi `INVALID_ARGUMENTS`, `RATE_LIMITED` và timeout.
+- Retry cho cùng tool/provider bị giới hạn 3 lần; sau đó ghi
+  `retry_exhausted` và báo rõ không thể xác nhận trạng thái.
+- Đã pass 4 bonus agent tests và toàn bộ 38 test chính.
+- Kết quả bonus sau khi chạy lại: 10/10 case được chấm, điểm 94.7/100,
+  quy đổi `bonus_points_0_15 = 14.21/15`.

@@ -100,6 +100,7 @@ def run_agent(question, provider, tools, max_steps=6):
                 {'role': 'user', 'content': question}]
     trace, usage = [], []
     sources = []  # incident đã đọc thành công: {id, url} (Bài 4)
+    retry_counts = {}
     status, answer, error = 'max_steps', '', None
 
     for step in range(1, max_steps + 1):
@@ -126,9 +127,23 @@ def run_agent(question, provider, tools, max_steps=6):
             for call in calls:
                 call_id, name, raw = call.get('id'), call.get('name'), call.get('arguments')
                 try:
-                    args = json.loads(raw) if isinstance(raw, str) else raw
+                    call_args = json.loads(raw) if isinstance(raw, str) else raw
                 except (ValueError, TypeError):
-                    args = None  # JSON lỗi -> trả observation, không crash
+                    call_args = None
+                retry_key = (name, (call_args or {}).get('provider') if isinstance(call_args, dict) else None)
+                retry_count = retry_counts.get(retry_key, 0)
+                if retry_count >= 3:
+                    result = {
+                        'ok': False,
+                        'error': 'RETRY_LIMIT_EXCEEDED',
+                        'message': 'Đã thử lại tool này 3 lần nhưng vẫn lỗi; không thể xác nhận trạng thái.',
+                    }
+                    trace.append({'event': 'retry_exhausted', 'step': step, 'name': name,
+                                  'arguments': call_args if call_args is not None else raw})
+                    messages.append({'role': 'tool', 'tool_call_id': call_id,
+                                     'content': json.dumps(result, ensure_ascii=False)})
+                    continue
+                args = call_args
                 if isinstance(args, dict):
                     try:
                         result = tools.execute(name, args)
@@ -137,6 +152,15 @@ def run_agent(question, provider, tools, max_steps=6):
                 else:
                     result = {'ok': False, 'error': 'INVALID_ARGUMENTS',
                               'message': 'Arguments phải là JSON object; hãy gọi lại với định dạng đúng.'}
+                if (isinstance(result, dict)
+                        and (result.get('retriable')
+                             or result.get('error') in {
+                                 'RATE_LIMITED', 'INVALID_ARGUMENTS', 'TimeoutError',
+                                 'URLError', 'HTTP_ERROR'
+                             })):
+                    retry_counts[retry_key] = retry_count + 1
+                else:
+                    retry_counts.pop(retry_key, None)
                 if (name == 'get_incident_details' and isinstance(result, dict)
                         and result.get('ok') and result.get('url')):
                     incident_id = result.get('id') or (args or {}).get('incident_id')
