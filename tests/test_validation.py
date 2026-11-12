@@ -41,5 +41,21 @@ class EvidenceGateTests(unittest.TestCase):
         fake = FakeProvider([tool_call('1', 'get_incident_details', '{"provider":"github","incident_id":"missing"}'), final('Không tìm được incident')])
         self.assertEqual(run_agent('x', fake, StatusTools())['status'], 'completed')
 
+    def test_updated_at_is_not_accepted_as_resolved_time(self):
+        url = 'https://stspg.io/7pwv28hvkmz8'
+        fake = FakeProvider([
+            tool_call('1', 'get_incident_details', '{"provider":"github","incident_id":"h02n9572mx9y"}'),
+            final('Incident resolved lúc 2026-11-07 01:10. ' + url),
+            final('Incident resolved lúc 2026-11-04 18:16. ' + url),
+        ])
+        result = run_agent('x', fake, StatusTools(), max_steps=4)
+        self.assertEqual(result['status'], 'completed')
+        self.assertIn('2026-11-04 18:16', result['answer'])
+        self.assertTrue(any(
+            x['event'] == 'validation_mislabelled_resolution'
+            for x in result['trace']
+        ))
+
+
 if __name__ == '__main__':
     unittest.main()
